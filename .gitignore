@@ -1,0 +1,22 @@
+# Large model files
+*.ckpt
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.gguf
+
+# Generated outputs (keep intentionally selected examples by force-adding them)
+**/outputs/*
+!**/outputs/.gitkeep
+
+# Local ComfyUI runtime / environment
+.venv/
+venv/
+__pycache__/
+.DS_Store
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
