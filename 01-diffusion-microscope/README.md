@@ -24,42 +24,61 @@ You will manually connect them.
 
 ## Target graph
 
-```text
-                         positive prompt
-                               │
-                               ▼
-                        CLIP Text Encode ───┐
-                                           │
-Load Checkpoint ── MODEL ───────────────┐  │
-      │                                  │  │
-      ├── CLIP ──────────────────────────┼──┘
-      │                                  │
-      │                    negative prompt
-      │                           │
-      │                           ▼
-      │                    CLIP Text Encode
-      │                           │
-      │                           ▼
-      │                       conditioning
-      │
-      │       Empty Latent Image
-      │               │
-      │               ▼
-      └───────────→ KSampler
-                      │
-                      ▼
-                    latent
-                      │
-Load Checkpoint ─ VAE │
-          │           ▼
-          └──────→ VAE Decode
-                      │
-                      ▼
-                    image
-                      │
-                      ▼
-                  Save Image
+```mermaid
+flowchart LR
+    A["Load Checkpoint"]
+
+    P["CLIP Text Encode<br/>positive prompt"]
+    N["CLIP Text Encode<br/>negative prompt"]
+    L["Empty Latent Image"]
+    K["KSampler"]
+    V["VAE Decode"]
+    S["Save Image"]
+
+    A -- MODEL --> K
+    A -- CLIP --> P
+    A -- CLIP --> N
+    A -- VAE --> V
+
+    P -- positive conditioning --> K
+    N -- negative conditioning --> K
+    L -- latent image --> K
+
+    K -- latent samples --> V
+    V -- image --> S
 ```
+
+### Read the graph left → right
+
+```text
+                         ┌─→ positive prompt → CLIP encode ─┐
+Load Checkpoint ── CLIP ┤                                 │
+                         └─→ negative prompt → CLIP encode ─┤
+                                                           ▼
+Load Checkpoint ── MODEL ───────────────────────────────→ KSampler
+Empty Latent Image ─────────────────────────────────────→ KSampler
+                                                           │
+                                                           ▼
+                                                     latent samples
+                                                           │
+Load Checkpoint ── VAE ────────────────────────────────────┤
+                                                           ▼
+                                                       VAE Decode
+                                                           │
+                                                           ▼
+                                                         image
+                                                           │
+                                                           ▼
+                                                       Save Image
+```
+
+The important idea is that **`Load Checkpoint` fans out into three different components**:
+
+- `MODEL` goes to `KSampler`
+- `CLIP` goes to both text encoders
+- `VAE` goes to `VAE Decode`
+
+The two text encoders each output conditioning, while `Empty Latent Image` provides the latent canvas that the sampler will denoise.
 
 ## What to notice while connecting nodes
 
